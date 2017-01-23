@@ -293,7 +293,7 @@ namespace LibMPlayerCommon
 
             */
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -cache 16384 -cache-min 10 -af framestep=1500 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
-            MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 8192 -cache-min 0 -af framestep=40 -fps 25 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
+            MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle  -cache 16384 -cache-min 10 -af framestep=120 -fps 15 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
             MediaPlayer.StartInfo.FileName = this._backendProgram.MPlayer;
 
             MediaPlayer.Start();
