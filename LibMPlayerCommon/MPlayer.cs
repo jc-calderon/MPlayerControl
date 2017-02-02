@@ -34,6 +34,7 @@ namespace LibMPlayerCommon
     public class MPlayer
     {
         private int _wid;
+        private int fps = 25;
         private bool _fullscreen;
         private int _mplayerProcessID = -1;
         private MplayerBackends _mplayerBackend;
@@ -293,7 +294,7 @@ namespace LibMPlayerCommon
 
             */
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -cache 16384 -cache-min 10 -af framestep=1500 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
-            MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle  -cache 16384 -cache-min 10 -af framestep=120 -fps 15 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
+            MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 16384 -cache-min 10 -af framestep=120 -fps {2} -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid, this.fps);
             MediaPlayer.StartInfo.FileName = this._backendProgram.MPlayer;
 
             MediaPlayer.Start();
@@ -318,10 +319,11 @@ namespace LibMPlayerCommon
         /// Load and start playing a video.
         /// </summary>
         /// <param name="filePath"></param>
-        public void Play(string filePath)
+        public void Play(string filePath, int fps = 15)
         {
             this.currentFilePath = filePath;
 
+            this.fps = fps;
 
             if (this.MplayerRunning == false)
             {
