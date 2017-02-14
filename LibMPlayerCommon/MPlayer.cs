@@ -319,7 +319,7 @@ namespace LibMPlayerCommon
         /// Load and start playing a video.
         /// </summary>
         /// <param name="filePath"></param>
-        public void Play(string filePath, int fps = 15)
+        public void Play(string filePath, int fps = 25)
         {
             this.currentFilePath = filePath;
 
