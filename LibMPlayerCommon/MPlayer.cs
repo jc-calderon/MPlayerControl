@@ -34,7 +34,9 @@ namespace LibMPlayerCommon
     public class MPlayer
     {
         private int _wid;
-        private int fps = 25;
+        private float fps = 25.0f;
+        private int cacheSize = 8192;
+
         private bool _fullscreen;
         private int _mplayerProcessID = -1;
         private MplayerBackends _mplayerBackend;
@@ -295,7 +297,7 @@ namespace LibMPlayerCommon
             */
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -cache 16384 -cache-min 10 -af framestep=1500 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 16384 -cache-min 10 -af framestep=120 -fps {2} -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid, this.fps);
-            MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 8192 -fps {2} -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid, this.fps);
+            MediaPlayer.StartInfo.Arguments = $"-slave -quiet -idle -nofontconfig {CacheOption} -fps {this.Fps:####0.0##} -fs -nodr -double -v -ontop -nomouseinput -vo {backend} -wid {_wid}";
             MediaPlayer.StartInfo.FileName = this._backendProgram.MPlayer;
 
             MediaPlayer.Start();
@@ -311,16 +313,13 @@ namespace LibMPlayerCommon
             MediaPlayer.ErrorDataReceived += HandleMediaPlayerErrorDataReceived;
             MediaPlayer.BeginErrorReadLine();
             MediaPlayer.BeginOutputReadLine();
-
-
-
         }
 
         /// <summary>
         /// Load and start playing a video.
         /// </summary>
         /// <param name="filePath"></param>
-        public void Play(string filePath, int fps = 25)
+        public void Play(string filePath, int cacheSize = 8192, float fps = 25.0f)
         {
             this.currentFilePath = filePath;
 
@@ -328,14 +327,12 @@ namespace LibMPlayerCommon
 
             if (this.MplayerRunning == false)
             {
+                CacheSize = cacheSize;
                 InitializeMplayer();
             }
 
             LoadFile(filePath);
             this.CurrentStatus = MediaStatus.Playing;
-
-
-
         }
 
         /// <summary>
@@ -361,7 +358,6 @@ namespace LibMPlayerCommon
         /// </remarks>
         private string PrepareFilePath(string filePath)
         {
-
             string preparedPath = filePath.Replace("" + System.IO.Path.DirectorySeparatorChar, "" + System.IO.Path.DirectorySeparatorChar + System.IO.Path.DirectorySeparatorChar);
 
             return preparedPath;
@@ -511,7 +507,7 @@ namespace LibMPlayerCommon
                 return this._percentpos;
             }
             return "";
-        this._percentpos = "";
+            //this._percentpos = "";
         }
         /// <summary>
         /// Get the current postion in the file being played.
@@ -530,6 +526,57 @@ namespace LibMPlayerCommon
                 return this._currentPosition;
             }
             return -1;
+        }
+
+        /// <summary>
+        /// Get current fps value of playing video. Set new fps for playing.
+        /// </summary>
+        public float Fps
+        {
+            get { return fps; }
+            set
+            {
+                fps = value;
+                MediaPlayer.StandardInput.WriteLine(string.Format("set_property fps {0:####0.0##}", fps));
+                MediaPlayer.StandardInput.Flush();
+            }
+        }
+
+        /// <summary>
+        /// Get current cache size in kilobytes.
+        /// Sets new cache size for player.
+        /// If size is zero, player will use -nocache option.
+        /// Works only on player start and futher changes are ignored.
+        /// </summary>
+        public int CacheSize
+        {
+            get { return cacheSize; }
+            set
+            {
+                if (!MplayerRunning)
+                {
+                    cacheSize = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns Cache option for player launch
+        /// </summary>
+        private string CacheOption
+        {
+            get
+            {
+                if (CacheSize > 0)
+                {
+                    return $"-cache {CacheSize}";
+                }
+                else
+                {
+                    return "-nocache";
+                }
+                
+            }
         }
 
         /// <summary>
@@ -970,3 +1017,4 @@ namespace LibMPlayerCommon
 
     }
 }
+    
