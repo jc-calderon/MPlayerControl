@@ -91,6 +91,8 @@ namespace LibMPlayerCommon
         {
         }
 
+        private const int CurrentPositionTimerTimeout = 500;
+
         /// <summary>
         /// Create a new instance of mplayer class.
         /// </summary>
@@ -115,7 +117,7 @@ namespace LibMPlayerCommon
 
             // This timer will send an event every second with the current video postion when video
             // is in play mode.
-            this._currentPostionTimer = new System.Timers.Timer(1000);
+            this._currentPostionTimer = new System.Timers.Timer(CurrentPositionTimerTimeout);
             this._currentPostionTimer.Elapsed += new ElapsedEventHandler(_currentPostionTimer_Elapsed);
             this._currentPostionTimer.Enabled = true;
 
