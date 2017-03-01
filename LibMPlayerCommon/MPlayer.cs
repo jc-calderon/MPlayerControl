@@ -391,6 +391,12 @@ namespace LibMPlayerCommon
             MediaPlayer.StandardInput.Flush();
         }
 
+        public void Seek(double value, Seek type)
+        {
+            MediaPlayer.StandardInput.WriteLine(string.Format("seek {0:##0.0##} {1}", value, type));
+            MediaPlayer.StandardInput.Flush();
+        }
+
         public void SetSize(int width, int height)
         {
             if (this.CurrentStatus != MediaStatus.Playing)
