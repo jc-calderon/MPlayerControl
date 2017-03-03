@@ -23,10 +23,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Timers;
-
-
 using System.Diagnostics;
-
+using System.Threading.Tasks;
 
 namespace LibMPlayerCommon
 {
@@ -297,7 +295,7 @@ namespace LibMPlayerCommon
             */
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -cache 16384 -cache-min 10 -af framestep=1500 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 16384 -cache-min 10 -af framestep=120 -fps {2} -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid, this.fps);
-            MediaPlayer.StartInfo.Arguments = $"-slave -quiet -idle -nofontconfig {CacheOption} {FpsOption} -fs -nodr -double -v -ontop -nomouseinput -vo {backend} -wid {_wid}";
+            MediaPlayer.StartInfo.Arguments = $"-slave -quiet -idle -nofontconfig -noconfig all {CacheOption} {FpsOption} -fs -nodr -double -v -ontop -nomouseinput -vo {backend} -wid {_wid}";
             MediaPlayer.StartInfo.FileName = this._backendProgram.MPlayer;
 
             MediaPlayer.Start();
@@ -339,13 +337,21 @@ namespace LibMPlayerCommon
         /// Starts a new video/audio file immediatly.  Requires that Play has been called.
         /// </summary>
         /// <param name="filePath">string</param>
-        public void LoadFile(string filePath)
+        public async void LoadFile(string filePath)
         {
             string LoadCommand = @"" + string.Format("loadfile \"{0}\"", PrepareFilePath(filePath));
             MediaPlayer.StandardInput.WriteLine(LoadCommand);
             //MediaPlayer.StandardInput.WriteLine("play");
             MediaPlayer.StandardInput.Flush();
-            this.LoadCurrentPlayingFileLength();
+            await LoadCurrentPlayingFileLengthAsync();
+        }
+
+        private async Task LoadCurrentPlayingFileLengthAsync()
+        {
+            await Task.Run(() =>
+            {
+                this.LoadCurrentPlayingFileLength();
+            });
         }
 
         /// <summary>
