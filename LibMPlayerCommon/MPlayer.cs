@@ -295,7 +295,27 @@ namespace LibMPlayerCommon
             */
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -cache 16384 -cache-min 10 -af framestep=1500 -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid);
             //MediaPlayer.StartInfo.Arguments = string.Format("-slave -quiet -idle -nofontconfig -cache 16384 -cache-min 10 -af framestep=120 -fps {2} -fs -nodr -double -v -ontop -vo {0} -wid {1}", backend, this._wid, this.fps);
-            MediaPlayer.StartInfo.Arguments = $"-slave -quiet -idle -nofontconfig -noconfig all {CacheOption} {FpsOption} -fs -nodr -double -v -ontop -nomouseinput -vo {backend} -wid {_wid}";
+
+            var args = new StringBuilder();
+            args.Append(" -slave");
+            args.Append(" -quiet");
+            args.Append(" -idle");              // wait insead of quit
+            args.Append(" -identify");          // needed for ID_* info
+            args.Append(" -nofontconfig");
+            args.Append(" -noconfig all");
+            args.Append(" -fs");
+            args.Append(" -nodr");
+            args.Append(" -double");
+            args.Append(" -v");
+            args.Append(" -ontop");
+            args.Append($" {CacheOption}");
+            args.Append($" {FpsOption}");
+
+            args.AppendFormat(" -vo {0}", backend);
+            args.AppendFormat(" -wid {0}", _wid); // output handle
+
+            MediaPlayer.StartInfo.Arguments = args.ToString();
+
             MediaPlayer.StartInfo.FileName = this._backendProgram.MPlayer;
 
             MediaPlayer.Start();
@@ -309,8 +329,14 @@ namespace LibMPlayerCommon
 
             MediaPlayer.OutputDataReceived += HandleMediaPlayerOutputDataReceived;
             MediaPlayer.ErrorDataReceived += HandleMediaPlayerErrorDataReceived;
+            MediaPlayer.Exited += MediaPlayer_Exited;
             MediaPlayer.BeginErrorReadLine();
             MediaPlayer.BeginOutputReadLine();
+        }
+
+        private void MediaPlayer_Exited(object sender, EventArgs e)
+        {
+            //throw new NotImplementedException();
         }
 
         /// <summary>
