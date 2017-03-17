@@ -39,6 +39,7 @@ namespace LibMPlayerCommon
 
         // Current position in seconds in stream.
         private int _currentPosition = 0;
+        private float _currentPositionMs = 0.0f;
 
         // The total length that the video is in seconds.
         private int _totalTime = 0;
@@ -306,6 +307,7 @@ namespace LibMPlayerCommon
             args.Append(" -fs");
             args.Append(" -nodr");
             args.Append(" -double");
+            args.Append(" -framedrop");         //Skip frames
             args.Append(" -v");
             args.Append(" -ontop");
             args.Append($" {CacheOption}");
@@ -1052,8 +1054,12 @@ namespace LibMPlayerCommon
                 else if (line.StartsWith("ANS_TIME_POSITION=", StringComparison.Ordinal))
                 {
                     this._currentPosition = (int)Globals.FloatParse(line.Substring("ANS_TIME_POSITION=".Length));
+                    this._currentPositionMs = (int)(1000*Globals.FloatParse(line.Substring("ANS_TIME_POSITION=".Length)));
 
-                    this.CurrentPosition?.Invoke(this, new MplayerEvent(this._currentPosition));
+                    //Debug.WriteLine(this._currentPositionMs);
+
+                    //this.CurrentPosition?.Invoke(this, new MplayerEvent(this._currentPosition));
+                    this.CurrentPosition?.Invoke(this, new MplayerEvent((int)this._currentPositionMs));
                 }
                 else if (line.StartsWith("ANS_length=", StringComparison.Ordinal))
                 {
