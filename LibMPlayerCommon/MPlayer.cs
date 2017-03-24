@@ -308,6 +308,11 @@ namespace LibMPlayerCommon
             args.Append(" -nodr");
             args.Append(" -double");
             args.Append(" -framedrop");         //Skip frames
+            args.Append(" -demuxer lavf");
+            //args.Append(" -nocorrect-pts");
+            args.Append(" -correct-pts");
+
+
             args.Append(" -v");
             args.Append(" -ontop");
             args.Append($" {CacheOption}");
