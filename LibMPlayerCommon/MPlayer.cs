@@ -376,7 +376,7 @@ namespace LibMPlayerCommon
             MediaPlayer.StandardInput.WriteLine(LoadCommand);
             //MediaPlayer.StandardInput.WriteLine("play");
             MediaPlayer.StandardInput.Flush();
-            await LoadCurrentPlayingFileLengthAsync();
+            //await LoadCurrentPlayingFileLengthAsync();
         }
 
         private async Task LoadCurrentPlayingFileLengthAsync()
