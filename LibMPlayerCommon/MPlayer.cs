@@ -41,6 +41,8 @@ namespace LibMPlayerCommon
         private int _currentPosition = 0;
         private float _currentPositionMs = 0.0f;
 
+        private int continuityCheckFailedCount = 0;
+
         // The total length that the video is in seconds.
         private int _totalTime = 0;
        
@@ -64,7 +66,9 @@ namespace LibMPlayerCommon
         public event MplayerEventHandler Audiochannel;
         public event MplayerEventHandler Setaudiolang;
         private System.Timers.Timer _currentPostionTimer;
-        
+
+        public event MplayerEventHandler SegmentChanged;
+
         ///vars for mplayer info
         private string _getfileinfofilename;
         private string _cache;
@@ -304,7 +308,8 @@ namespace LibMPlayerCommon
             args.Append(" -identify");          // needed for ID_* info
             args.Append(" -nofontconfig");
             args.Append(" -noconfig all");
-            args.Append(" -fs");
+            args.Append(" -nosub");
+            args.Append(" -nofs");              //No full screen
             args.Append(" -nodr");
             args.Append(" -double");
             args.Append(" -framedrop");         //Skip frames
@@ -364,13 +369,16 @@ namespace LibMPlayerCommon
 
             LoadFile(filePath);
             this.CurrentStatus = MediaStatus.Playing;
+
+            // Call to get right file start time pos
+            TestCurrentPosition();
         }
 
         /// <summary>
         /// Starts a new video/audio file immediatly.  Requires that Play has been called.
         /// </summary>
         /// <param name="filePath">string</param>
-        public async void LoadFile(string filePath)
+        public void LoadFile(string filePath)
         {
             string LoadCommand = @"" + string.Format("loadfile \"{0}\"", PrepareFilePath(filePath));
             MediaPlayer.StandardInput.WriteLine(LoadCommand);
@@ -505,6 +513,10 @@ namespace LibMPlayerCommon
             {
                 Logging.Instance.WriteLine(ex);
             }
+
+#if DEBUG
+            dump.Close();
+#endif
         }
         /// <summary>
         /// set percent position of mplayer 
@@ -571,6 +583,15 @@ namespace LibMPlayerCommon
                 return this._currentPosition;
             }
             return -1;
+        }
+
+        public void TestCurrentPosition()
+        {
+            if (this.CurrentStatus != MediaStatus.Stopped)
+            {
+                MediaPlayer.StandardInput.WriteLine("get_time_pos");
+                MediaPlayer.StandardInput.Flush();
+            }
         }
 
         /// <summary>
@@ -765,11 +786,11 @@ namespace LibMPlayerCommon
             MediaPlayer.StandardInput.WriteLine(string.Format("switch_ratio {0}", ratio));
             MediaPlayer.StandardInput.Flush();
         }
-        
+
         /// <summary>
         /// get info about the file 
         /// </summary>
-#region get info
+        #region get info
         //get audio bitrate
         public string GetAudioBitrate()
         {
@@ -939,7 +960,11 @@ namespace LibMPlayerCommon
             }
         return "";
         }
-#endregion
+        #endregion
+
+#if DEBUG
+        System.IO.TextWriter dump = System.IO.File.CreateText($"{DateTime.Now.Ticks}.log");
+#endif
 
         /// <summary>
         /// All mplayer standard output is read through this function.
@@ -951,6 +976,10 @@ namespace LibMPlayerCommon
             if (e.Data != null)
             {
                 string line = e.Data.ToString();
+
+#if DEBUG
+                dump.WriteLine(line);
+#endif
 
                 if (line.StartsWith("EOF code:", StringComparison.Ordinal))
                 {
@@ -1056,14 +1085,54 @@ namespace LibMPlayerCommon
                 {
                     this._getfileinfofilename = line.Substring("ANS_VIDEO_RESOLUTION=".Length);
                 }
+                else if (line.StartsWith("ID_START_TIME=", StringComparison.Ordinal))
+                {
+                    this._currentPositionMs = (int)(1000 * Globals.FloatParse(line.Substring("ID_START_TIME=".Length)));
+
+                    Debug.WriteLine($"START_TIME: {this._currentPositionMs}");
+
+                    this.CurrentPosition?.Invoke(this, new MplayerEvent((int)this._currentPositionMs));
+                }
+                // Code for segment switching detection
+                //pts value < previous
+                else if (line.StartsWith("pts value < previous", StringComparison.Ordinal))
+                {
+                    TestCurrentPosition();
+                    //Debug.WriteLine($"pts value < previous");
+
+                    //Reset continuityCheckFailedCount
+                    continuityCheckFailedCount = 0;
+                }
+                //[mpegts @ 019614a0]DTS 126000 < 486000 out of order
+                else if (line.StartsWith("[mpegts", StringComparison.Ordinal) && line.EndsWith("out of order"))
+                {
+                    TestCurrentPosition();
+                    //Debug.WriteLine($"[mpegts * out of order");
+
+                    //Reset continuityCheckFailedCount
+                    continuityCheckFailedCount = 0;
+                }
+                //[mpegts @ 019614a0]Continuity check failed for pid
+                else if (line.StartsWith("[mpegts", StringComparison.Ordinal) && line.Contains("Continuity check failed for pid"))
+                {
+                    TestCurrentPosition();
+                    //Debug.WriteLine($"[mpegts * Continuity check failed for pid");
+                    if (continuityCheckFailedCount == 0)
+                    {
+                        this.SegmentChanged?.Invoke(this, new MplayerEvent(continuityCheckFailedCount));
+                    }
+                    continuityCheckFailedCount++;
+                }
                 else if (line.StartsWith("ANS_TIME_POSITION=", StringComparison.Ordinal))
                 {
+                    //Reset continuityCheckFailedCount
+                    continuityCheckFailedCount = 0;
+
                     this._currentPosition = (int)Globals.FloatParse(line.Substring("ANS_TIME_POSITION=".Length));
                     this._currentPositionMs = (int)(1000*Globals.FloatParse(line.Substring("ANS_TIME_POSITION=".Length)));
 
                     //Debug.WriteLine(this._currentPositionMs);
 
-                    //this.CurrentPosition?.Invoke(this, new MplayerEvent(this._currentPosition));
                     this.CurrentPosition?.Invoke(this, new MplayerEvent((int)this._currentPositionMs));
                 }
                 else if (line.StartsWith("ANS_length=", StringComparison.Ordinal))
@@ -1094,4 +1163,3 @@ namespace LibMPlayerCommon
 
     }
 }
-    
